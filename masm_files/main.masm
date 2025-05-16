@@ -1,0 +1,6 @@
+#include "stdio.print"
+lbl main
+    DB $100 "<!doctype html> <head> <title>MASM Example</title></head>"
+    out 1 $100
+    DB $100 "<body> <h1>Hello, World!</h1>"
+    out 1 $100

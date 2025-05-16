@@ -1,4 +1,4 @@
-package com.mycompany.mavenproject1;
+package org.finite.mavenproject1;
 
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpHandler;
@@ -19,10 +19,7 @@ import org.graalvm.polyglot.HostAccess;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// Removed unused imports
-// import org.finite.interp.instruction;
-// import com.mycompany.mavenproject1.GraalVMIntegration;
-// import org.graalvm.polyglot.proxy.ProxyObject;
+
 
 class Mavenproject1 {
 
@@ -71,6 +68,11 @@ class Mavenproject1 {
             System.out.println("Request Method: " + exchange.getRequestMethod());
             System.out.println("Request Path: " + exchange.getRequestURI().getPath());
 
+            // Clear the output stream before processing the request
+            if (outputStream instanceof ByteArrayOutputStream) {
+                ((ByteArrayOutputStream) outputStream).reset();
+            }
+
             if (!"GET".equals(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(405, -1); // Method Not Allowed
                 return;
@@ -92,7 +94,7 @@ class Mavenproject1 {
                 System.out.println("MASM Code Read Successfully");
 
                 // Extract <script> blocks
-                Pattern scriptPattern = Pattern.compile("<script>(.*?)</script>", Pattern.DOTALL);
+                Pattern scriptPattern = Pattern.compile("<Jscript>(.*?)</Jscript>", Pattern.DOTALL);
                 Matcher matcher = scriptPattern.matcher(masmCode);
 
                 while (matcher.find()) {
@@ -106,6 +108,9 @@ class Mavenproject1 {
                     } catch (Exception e) {
                         System.out.println("Error executing JavaScript: " + e.getMessage());
                     }
+
+                    // Remove the <script> block from the MASM code
+                    masmCode = masmCode.replace(matcher.group(0), " ");
                 }
 
                 // Execute the MASM code and capture the output
@@ -143,6 +148,14 @@ class Mavenproject1 {
             @HostAccess.Export
             public String greet(String name) {
                 return "Hello, " + name;
+            }
+            @HostAccess.Export
+            public void appendToPage(String content) {
+                try {
+                    bufferedOutputStream.write(content.getBytes("UTF-8"));
+                } catch (IOException e) {
+                    System.out.println("Error appending content to page: " + e.getMessage());
+                }
             }
         }
     }

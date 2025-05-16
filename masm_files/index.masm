@@ -1,8 +1,22 @@
+lbl buttonpress
+    ; Define button press event
+    db $100 "Button go meow"
+    out 1 $100 
+    ret
+
+
 lbl main
     ; Define HTML content
     DB $100 "<!doctype html> <head> <title>MASM Example</title></head>"
     out 1 $100
     DB $100 "<body> <h1>Hello, MASM!</h1> <p>This is a simple MASM example written with masm V1 and java.</p></body>"
     out 1 $100
-    DB $100 "<script>JavaFunctions.log('meow')</script>"
+    DB $100 "<button onclick='buttonpress()'>Click Me!</button>"
     out 1 $100
+    DB $100 "<script> function buttonpress() { alert('Button pressed!'); } </script>"
+    out 1 $100
+    
+    ; Define CSS content
+    DB $100 "<style> body { font-family: Arial, sans-serif; } h1 { color: blue; } p { color: green; } </style>"
+    out 1 $100
+
