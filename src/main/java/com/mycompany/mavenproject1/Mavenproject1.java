@@ -12,10 +12,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
-import org.graalvm.polyglot.Value;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
 // import org.finite.interp.instruction;
 // import com.mycompany.mavenproject1.GraalVMIntegration;
 // import org.graalvm.polyglot.proxy.ProxyObject;
-// import org.graalvm.polyglot.Value;
 
 class Mavenproject1 {
 
@@ -46,18 +45,23 @@ class Mavenproject1 {
     }
 
     static class MASMHandler implements HttpHandler {
-        public static OutputStream outputStream;
-    
         private final String masmDirectory;
+        public static OutputStream outputStream = new ByteArrayOutputStream();
         public static BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
 
         public MASMHandler(String masmDirectory) {
             this.masmDirectory = masmDirectory;
             System.out.println("MASM Directory set to: " + masmDirectory);
-            System.out.println("MASM Directory: " + masmDirectory);
-            Functions.stdout = outputStream; // Assuming this is how you set the output stream
+
+            // Ensure outputStream is initialized
+            if (!(outputStream instanceof ByteArrayOutputStream)) {
+                outputStream = new ByteArrayOutputStream();
+            }
+
             bufferedOutputStream = new BufferedOutputStream(outputStream);
-            Functions.bufferedStdout = bufferedOutputStream; // Set the buffered output stream for Functions
+            Functions.stdout = outputStream;
+            Functions.bufferedStdout = bufferedOutputStream;
+
             System.out.println("Buffered Output Stream initialized.");
             System.out.println("Mavenproject1.MASMHandler initialized with MASM Directory: " + masmDirectory);
         }
@@ -90,7 +94,6 @@ class Mavenproject1 {
                 // Extract <script> blocks
                 Pattern scriptPattern = Pattern.compile("<script>(.*?)</script>", Pattern.DOTALL);
                 Matcher matcher = scriptPattern.matcher(masmCode);
-                StringBuilder outputBuilder = new StringBuilder();
 
                 while (matcher.find()) {
                     String scriptCode = matcher.group(1);
@@ -103,21 +106,27 @@ class Mavenproject1 {
                     } catch (Exception e) {
                         System.out.println("Error executing JavaScript: " + e.getMessage());
                     }
-
-                    // Remove the <script> block from the MASM code
-                    int start = matcher.start();
-                    int end = matcher.end();
-                    masmCode = masmCode.substring(0, start) + masmCode.substring(end);
                 }
 
-                // Append the remaining MASM code to the output
-                outputBuilder.append(masmCode);
+                // Execute the MASM code and capture the output
+                try {
+                    org.finite.interp.executeMASMCode(masmCode);
+                } catch (Exception e) {
+                    System.out.println("Error executing MASM code: " + e.getMessage());
+                    exchange.sendResponseHeaders(500, -1); // Internal Server Error
+                    return;
+                }
+
+                // Flush the buffered output stream
+                bufferedOutputStream.flush();
+
+                // Retrieve the output from the ByteArrayOutputStream
+                String responseContent = ((ByteArrayOutputStream) outputStream).toString("UTF-8");
 
                 // Send the processed output as the response
-                String finalOutput = outputBuilder.toString();
                 exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
-                exchange.sendResponseHeaders(200, finalOutput.getBytes().length);
-                exchange.getResponseBody().write(finalOutput.getBytes());
+                exchange.sendResponseHeaders(200, responseContent.getBytes().length);
+                exchange.getResponseBody().write(responseContent.getBytes());
             } catch (Exception e) {
                 System.out.println("Exception occurred: " + e.getMessage());
                 exchange.sendResponseHeaders(500, -1); // Internal Server Error
